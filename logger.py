@@ -1,27 +1,31 @@
 import logging
-import os
 
-# Crea una directory per i log se non esiste
-if not os.path.exists('logs'):
-    os.makedirs('logs')
+class CompactFormatter(logging.Formatter):
+    def format(self, record):
+        # Aggiunge asctime al record se non è già presente
+        if not hasattr(record, 'asctime'):
+            record.asctime = self.formatTime(record, self.datefmt)
+        
+        formatted_record = f"{record.asctime} [{record.levelname}] {record.getMessage()}"
+        return formatted_record
 
-# Configura il logger
+# Configura il logger per utilizzare il CompactFormatter
 logger = logging.getLogger('WorkTracker')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)  # Imposta il livello di log
 
-# Crea un file handler che registra i debug e superiori
-fh = logging.FileHandler('logs/work_tracker.log')
-fh.setLevel(logging.DEBUG)
+formatter = CompactFormatter('%(asctime)s [%(levelname)s] %(message)s')
 
-# Crea un console handler che registra info e superiori
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
+file_handler = logging.FileHandler('worktracker.log')
+file_handler.setFormatter(formatter)
 
-# Crea un formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
 
-# Aggiungi gli handler al logger
-logger.addHandler(fh)
-logger.addHandler(ch)
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+def log_user_action(user, action, level=logging.INFO):
+    logger.log(level, f"{user}: {action}")
+
+def log_exception(user, message):
+    logger.exception(f"{user}: {message}")

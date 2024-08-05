@@ -12,7 +12,7 @@ class Config:
     LUNCH_END_TIME = "14:30"
     BREAK_DURATION = 15  # in minutes
     DISCORD_IDLE_TIME = 5  # in minutes
-    SYNC_INTERVAL = 300  # in seconds
     TESTING = os.getenv('TESTING', 'False').lower() == 'true'
     TEST_USER_DISCORD_ID = os.getenv('TEST_USER_DISCORD_ID')
     SIMULATE_WORK_HOURS = os.getenv('SIMULATE_WORK_HOURS', 'False').lower() == 'true'
+    SILENT_MODE = True
