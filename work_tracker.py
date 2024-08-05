@@ -102,7 +102,6 @@ class WorkTracker(commands.Cog):
                 level=logging.ERROR,
             )
 
-
     async def handle_overtime(self, user, current_time):
         # Verifica se si sta lavorando in un giorno festivo o fuori dall'orario standard
         if (
@@ -140,6 +139,15 @@ class WorkTracker(commands.Cog):
             if new_state.name != old_state:
                 log_user_action(user.name, f"{old_state} -> {new_state.name}")
 
+                # Gestione della logica di idle con buffer time
+                if new_state == UserState.SHORT_BREAK and old_state == 'WORKING':
+                    log_user_action(user.name, f"{user.name} is now IDLE. Waiting for buffer time.")
+                    await asyncio.sleep(Config.IDLE_BUFFER_TIME * 60)  # Attende il buffer time configurato
+                    updated_state = self.discord_status_to_user_state(str(self.guild.get_member(int(discord_id)).status))
+                    if updated_state == UserState.WORKING:
+                        log_user_action(user.name, f"{user.name} returned ONLINE within the buffer period.")
+                        return  # L'utente è tornato online, quindi non consideriamo il cambio a IDLE
+                    
                 # Handle the state transition
                 if new_state == UserState.OFFLINE:
                     await self.handle_end_work(user)
@@ -265,8 +273,6 @@ class WorkTracker(commands.Cog):
         # Aggiorna lo stato dell'utente
         user.state = UserState.OFFLINE
 
-
-
     @commands.command(name="status")
     async def status(self, ctx):
         user = self.users.get(str(ctx.author.id))
@@ -275,13 +281,3 @@ class WorkTracker(commands.Cog):
         else:
             await ctx.send("You are not registered in the work tracking system.")
 
-    # @commands.Cog.listener()
-    # async def on_member_update(self, before, after):
-    #     if before.status != after.status:
-    #         user = self.users.get(str(after.id))
-    #         if user:
-    #             logger.info(
-    #                 f"User {user.name} changed status from {before.status} to {after.status}"
-    #             )
-    #             new_state = self.discord_status_to_user_state(str(after.status))
-    #             await self.sync_user_state(user, new_state, user.state)
