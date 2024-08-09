@@ -14,13 +14,20 @@ async def is_work_time(user: User, current_time: datetime, mapped_status: str, d
     return result
 
 async def is_lunch_time(user: User, current_time: datetime, mapped_status: str, db: Database) -> bool:
-    if user.has_taken_lunch_break:
+    # Controllare se l'utente ha già preso una pausa pranzo
+    if any(break_log.break_type == BreakType.ON_BREAK_LUNCH for break_log in user.break_logs):
         return False
+
     lunch_start = time_to_datetime(Config.LUNCH_START_TIME, current_time.date())
     lunch_end = time_to_datetime(Config.LUNCH_END_TIME, current_time.date())
-    result = lunch_start <= current_time <= lunch_end or await is_buffer_time(user, current_time, mapped_status, db)
+    buffer_before = timedelta(minutes=Config.LUNCH_BUFFER_BEFORE)
+    buffer_after = timedelta(minutes=Config.LUNCH_BUFFER_AFTER)
+
+    # Verificare se l'orario corrente rientra nel periodo della pausa pranzo, incluso il buffer
+    result = (lunch_start - buffer_before) <= current_time < (lunch_end + buffer_after)
     logger.debug(f"is_lunch_time for {user.full_name} at {current_time} with status {mapped_status}: {result}")
     return result
+
 
 async def is_break_time(user: User, current_time: datetime, mapped_status: str, db: Database) -> bool:
     is_work = await is_work_time(user, current_time, mapped_status, db)
@@ -213,35 +220,51 @@ async def log_start_break(user: User, current_time: datetime, new_state: UserSta
     if not check_transition_safety(user.state, new_state):
         logger.warning(f"Unsafe transition attempted: {user.state} -> {new_state}")
         return
-    break_type = BreakType.ON_BREAK_LUNCH if new_state == UserState.ON_BREAK_LUNCH else BreakType.SHORT_BREAK
-    user.start_break(break_type, current_time)
+    previous_state = user.state
     user.state = new_state
-    logger.info(f"{user.full_name}: Started {break_type.value} at {current_time}")
+    user.current_break_start = current_time
+    user.last_state_change_time = current_time
+    user.has_taken_lunch_break = True if new_state == UserState.ON_BREAK_LUNCH else False
+    
+    # Aggiungere il log della pausa
+    break_type = BreakType.ON_BREAK_LUNCH if new_state == UserState.ON_BREAK_LUNCH else BreakType.SHORT_BREAK
+    user.break_logs.append(BreakLog(user_id=user.id, break_type=break_type, start_time=current_time))
+    
+    logger.debug(f"{user.full_name}: {previous_state.value} -> {new_state.value} ({break_type.value}) at {current_time}")
 
 async def log_end_break(user: User, current_time: datetime, new_state: UserState, mapped_status: str, db: Database) -> None:
     if not check_transition_safety(user.state, new_state):
         logger.warning(f"Unsafe transition attempted: {user.state} -> {new_state}")
         return
+    
     previous_state = user.state
-    user.end_break(current_time)
     user.state = new_state
     user.last_state_change_time = current_time
 
-    if user.current_break:
-        break_type = user.current_break.break_type.value
-        break_duration = user.current_break.get_duration()
+    # Se c'è una pausa corrente, aggiorniamo e logghiamo i dettagli
+    if user.break_logs and user.break_logs[-1].end_time is None:
+        user.break_logs[-1].end_break(current_time)  # Aggiorna il log della pausa con l'orario di fine
+        
+        break_type = user.break_logs[-1].break_type.value
+        break_duration = user.break_logs[-1].get_duration()
+        
         logger.info(f"{user.full_name}: {previous_state.value} ({break_type}) -> {new_state.value} at {current_time}. Break duration: {break_duration}")
         
         if break_type == "ON_BREAK_LUNCH":
             logger.info(f"Ended lunch break for {user.full_name}. Duration: {break_duration}")
-            if user.current_break.excess_time > timedelta():
-                logger.warning(f"{user.full_name} exceeded lunch break by {user.current_break.excess_time}")
-            elif user.current_break.excess_time < timedelta():
-                logger.info(f"{user.full_name} took a shorter lunch break by {abs(user.current_break.excess_time)}")
+            if user.break_logs[-1].excess_time > timedelta():
+                logger.warning(f"{user.full_name} exceeded lunch break by {user.break_logs[-1].excess_time}")
+            elif user.break_logs[-1].excess_time < timedelta():
+                logger.info(f"{user.full_name} took a shorter lunch break by {abs(user.break_logs[-1].excess_time)}")
         
         logger.debug(f"Total break time for {user.full_name}: {user.get_total_break_time()}")
-    
+
+    # Resetta la pausa corrente per il prossimo utilizzo
     user.current_break = None
+
+    
+    user.current_break = None  # Resetta la pausa corrente per il prossimo utilizzo
+
 
 async def log_start_overtime(user: User, current_time: datetime, new_state: UserState, mapped_status: str, db: Database) -> None:
     if not check_transition_safety(user.state, new_state):
