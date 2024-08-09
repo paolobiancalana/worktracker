@@ -1,0 +1,11 @@
+discord:
+  online: WORKING
+  idle: SHORT_BREAK
+  dnd: WORKING
+  offline: OFFLINE
+
+google_chat:
+  Active: WORKING
+  Idle: SHORT_BREAK
+  Do not disturb: WORKING
+  Away: OFFLINE

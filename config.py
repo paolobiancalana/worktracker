@@ -48,7 +48,7 @@ class Config:
 
     @staticmethod
     def load_status_mapping():
-        with open('/home/paolobiancalana/Documents/worktracker/status_mapping.yaml', 'r') as file:
+        with open('status_mapping.yaml', 'r') as file:
             mappings = yaml.safe_load(file)
         return mappings.get(Config.CLIENT, {})
 
