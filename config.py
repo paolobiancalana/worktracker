@@ -9,29 +9,28 @@ class Config:
     DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
     GUILD_ID = os.getenv('GUILD_ID')
     
-    # Orari di lavoro
-    WORK_START_TIME = "07:00"
+    WORK_START_TIME = "09:00"
     WORK_END_TIME = "18:00"
-    
-    # Orari della pausa pranzo
-    LUNCH_START_TIME = "12:45"
-    LUNCH_END_TIME = "14:30"
+    WORK_BUFFER_BEFORE = 60
+    WORK_BUFFER_AFTER = 60
+
+    LUNCH_START_TIME = "13:00"
+    LUNCH_END_TIME = "14:00"
+    LUNCH_BUFFER_BEFORE = 30
+    LUNCH_BUFFER_AFTER = 30
+
     CHECK_OFFLINE_LIMIT_TIME = "11:00"
     
     # Durata delle pause
     BREAK_DURATION = 15  # Durata massima di una pausa breve (in minuti)
     MAX_EXTENDED_BREAK_DURATION = 30
+    MAX_LUNCH_DURATION = 60
     
     # Buffer per lo stato IDLE
     IDLE_BUFFER_TIME = 5  # Tempo aggiuntivo da attendere quando l'utente passa a IDLE (in minuti)
     
     # Altre configurazioni
     DISCORD_IDLE_TIME = 10  # Tempo dopo il quale Discord cambia lo stato in idle (in minuti)
-    
-    TESTING = os.getenv('TESTING', 'False').lower() == 'true'
-    TEST_USER_DISCORD_ID = os.getenv('TEST_USER_DISCORD_ID')
-    SIMULATE_WORK_HOURS = os.getenv('SIMULATE_WORK_HOURS', 'False').lower() == 'true'
-    SILENT_MODE = True
 
     # Nuove configurazioni per straordinari e giorni festivi
     REGULAR_WORK_HOURS = 8  # Ore di lavoro regolari in un giorno
@@ -41,6 +40,13 @@ class Config:
 
     # Livello di log
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'DEBUG').upper()
+
+    #DEBUG
+    INTERACTIVE_MODE = False
+    TESTING = os.getenv('TESTING', 'False').lower() == 'true'
+    TEST_USER_DISCORD_ID = os.getenv('TEST_USER_DISCORD_ID')
+    SIMULATE_WORK_HOURS = os.getenv('SIMULATE_WORK_HOURS', 'False').lower() == 'true'
+    SILENT_MODE = True
 
     @staticmethod
     def get_logging_level():

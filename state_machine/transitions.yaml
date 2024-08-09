@@ -1,84 +1,84 @@
+# Transizioni da OFFLINE
 - from: OFFLINE
   to: WORKING
-  client_status: 'WORKING'
+  client_status: ['ONLINE', 'WORKING']
   conditions:
     - is_work_time
+    - is_not_holiday_or_weekend
+    - is_within_work_hours
   callbacks:
     - log_start_work
+  priority: 10
+  requires_confirmation: true
 
 - from: OFFLINE
   to: HOLIDAY_WORK
-  client_status: 'WORKING'
+  client_status: ['ONLINE', 'WORKING']
   conditions:
+    - is_work_time
     - is_holiday_or_weekend
+    - is_within_work_hours
   callbacks:
     - log_start_holiday_work
+  priority: 11
+  requires_confirmation: true
 
-- from: OFFLINE
-  to: UNAUTHORIZED_ABSENCE
-  client_status: 'OFFLINE'
+# Transizioni da ONLINE
+- from: ONLINE
+  to: WORKING
+  client_status: 'WORKING'
   conditions:
-    - is_not_work_time
-    - is_unauthorized_absence
+    - is_work_time
+    - is_within_work_hours
   callbacks:
-    - log_unauthorized_absence
+    - log_start_work
+  priority: 9
+  requires_confirmation: true
 
-
-- from: WORKING
+- from: ONLINE
   to: SHORT_BREAK
-  client_status: 'SHORT_BREAK'
+  client_status: ['SHORT_BREAK', 'IDLE']
   conditions:
+    - is_work_time
     - is_break_time
+    - is_not_lunch_time
   callbacks:
     - log_start_break
+  priority: 8
+  requires_confirmation: false
 
-- from: SHORT_BREAK
-  to: EXTENDED_BREAK
-  client_status: 'SHORT_BREAK'
-  conditions:
-    - break_exceeded
-  callbacks:
-    - log_start_break
-
-- from: EXTENDED_BREAK
-  to: UNAUTHORIZED_ABSENCE
-  client_status: 'SHORT_BREAK'
-  conditions:
-    - break_exceeded
-  callbacks:
-    - log_unauthorized_absence
-
-- from: SHORT_BREAK
-  to: WORKING
-  client_status: 'WORKING'
-  conditions:
-    - is_work_time
-  callbacks:
-    - log_end_break
-
-- from: EXTENDED_BREAK
-  to: WORKING
-  client_status: 'WORKING'
-  conditions:
-    - is_work_time
-  callbacks:
-    - log_end_break
-
-- from: WORKING
-  to: LUNCH_BREAK
-  client_status: 'SHORT_BREAK'
+- from: ONLINE
+  to: ON_BREAK_LUNCH
+  client_status: ['SHORT_BREAK', 'IDLE']
   conditions:
     - is_lunch_time
   callbacks:
     - log_start_break
+  priority: 9
+  requires_confirmation: true
 
-- from: LUNCH_BREAK
-  to: WORKING
-  client_status: 'WORKING'
+# Transizioni da WORKING
+- from: WORKING
+  to: SHORT_BREAK
+  client_status: ['SHORT_BREAK', 'IDLE']
   conditions:
     - is_work_time
+    - is_break_time
+    - is_not_lunch_time
   callbacks:
-    - log_end_break
+    - log_start_break
+  priority: 8
+  requires_confirmation: false
+
+- from: WORKING
+  to: ON_BREAK_LUNCH
+  client_status: ['SHORT_BREAK', 'IDLE']
+  conditions:
+    - is_lunch_time
+  callbacks:
+    - log_start_break
+  priority: 9
+  requires_confirmation: true
 
 - from: WORKING
   to: OVERTIME
@@ -87,7 +87,130 @@
     - is_overtime
   callbacks:
     - log_start_overtime
+  priority: 10
+  requires_confirmation: true
 
+- from: WORKING
+  to: OFFLINE
+  client_status: 'OFFLINE'
+  conditions:
+    - idle_time_exceeded
+  callbacks:
+    - log_end_work
+  priority: 7
+  requires_confirmation: true
+
+- from: WORKING
+  to: HOLIDAY_WORK
+  client_status: 'WORKING'
+  conditions:
+    - is_holiday_or_weekend
+    - is_work_time
+  callbacks:
+    - log_start_holiday_work
+  priority: 11
+  requires_confirmation: true
+
+# Transizioni da SHORT_BREAK
+- from: SHORT_BREAK
+  to: EXTENDED_BREAK
+  client_status: ['SHORT_BREAK', 'IDLE']
+  conditions:
+    - break_exceeded
+    - is_not_lunch_time
+  callbacks:
+    - log_start_break
+  priority: 8
+  requires_confirmation: true
+
+- from: SHORT_BREAK
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_work_time
+    - break_exceeded
+  callbacks:
+    - log_end_break
+  priority: 7
+  requires_confirmation: false
+
+- from: SHORT_BREAK
+  to: ON_BREAK_LUNCH
+  client_status: ['SHORT_BREAK', 'IDLE']
+  conditions:
+    - is_lunch_time
+  callbacks:
+    - log_start_break
+  priority: 9
+  requires_confirmation: true
+
+# Transizioni da EXTENDED_BREAK
+- from: SHORT_BREAK
+  to: UNAUTHORIZED_ABSENCE
+  client_status: 'WORKING'
+  conditions:
+    - break_exceeded
+  callbacks:
+    - log_unauthorized_absence
+  priority: 9
+  requires_confirmation: true
+
+
+# Transizioni da EXTENDED_BREAK
+- from: EXTENDED_BREAK
+  to: UNAUTHORIZED_ABSENCE
+  client_status: 'SHORT_BREAK'
+  conditions:
+    - break_exceeded
+  callbacks:
+    - log_unauthorized_absence
+  priority: 9
+  requires_confirmation: False
+
+- from: EXTENDED_BREAK
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_work_time
+  callbacks:
+    - log_end_break
+  priority: 8
+  requires_confirmation: true
+
+- from: EXTENDED_BREAK
+  to: ON_BREAK_LUNCH
+  client_status: ['SHORT_BREAK', 'IDLE']
+  conditions:
+    - is_lunch_time
+  callbacks:
+    - log_start_break
+  priority: 9
+  requires_confirmation: true
+
+- from: ON_BREAK_LUNCH
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_work_time
+    - is_not_lunch_time
+  callbacks:
+    - log_end_break
+  priority: 8
+  requires_confirmation: true
+
+- from: ON_BREAK_LUNCH
+  to: SHORT_BREAK
+  client_status: ['SHORT_BREAK', 'IDLE']
+  conditions:
+    - is_work_time
+    - is_not_lunch_time
+    - is_break_time
+  callbacks:
+    - log_start_break
+  priority: 7
+  requires_confirmation: false
+
+# Transizioni da OVERTIME
 - from: OVERTIME
   to: WORKING
   client_status: 'WORKING'
@@ -95,14 +218,8 @@
     - is_regular_work
   callbacks:
     - log_end_overtime
-
-- from: WORKING
-  to: OFFLINE
-  client_status: 'OFFLINE'
-  conditions:
-    - idle_time_exceeded
-  callbacks:
-    - log_end_work
+  priority: 9
+  requires_confirmation: true
 
 - from: OVERTIME
   to: OFFLINE
@@ -111,7 +228,10 @@
     - idle_time_exceeded
   callbacks:
     - log_end_work
+  priority: 8
+  requires_confirmation: true
 
+# Transizioni da HOLIDAY_WORK
 - from: HOLIDAY_WORK
   to: OFFLINE
   client_status: 'OFFLINE'
@@ -119,51 +239,39 @@
     - idle_time_exceeded
   callbacks:
     - log_end_work
+  priority: 8
+  requires_confirmation: true
 
+- from: HOLIDAY_WORK
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_work_time
+    - is_not_holiday_or_weekend
+  callbacks:
+    - log_end_holiday_work
+  priority: 9
+  requires_confirmation: true
+
+# Transizioni da UNAUTHORIZED_ABSENCE
 - from: UNAUTHORIZED_ABSENCE
   to: WORKING
   client_status: 'WORKING'
   conditions:
     - is_work_time
+    - is_within_work_hours
   callbacks:
+    - log_end_unauthorized_absence
     - log_start_work
+  priority: 10
+  requires_confirmation: true
 
-- from: WORKING
-  to: HOLIDAY_WORK
-  client_status: 'WORKING'
-  conditions:
-    - is_holiday_or_weekend
-  callbacks:
-    - log_start_holiday_work
-
-- from: SHORT_BREAK
-  to: LUNCH_BREAK
-  client_status: 'SHORT_BREAK'
-  conditions:
-    - is_lunch_time
-  callbacks:
-    - log_start_break
-
-- from: EXTENDED_BREAK
-  to: LUNCH_BREAK
-  client_status: 'SHORT_BREAK'
-  conditions:
-    - is_lunch_time
-  callbacks:
-    - log_start_break
-
-- from: SHORT_BREAK
+- from: UNAUTHORIZED_ABSENCE
   to: OFFLINE
   client_status: 'OFFLINE'
   conditions:
-    - idle_time_exceeded
+    - is_not_work_time
   callbacks:
     - log_end_work
-
-- from: LUNCH_BREAK
-  to: OFFLINE
-  client_status: 'OFFLINE'
-  conditions:
-    - idle_time_exceeded
-  callbacks:
-    - log_end_work
+  priority: 9
+  requires_confirmation: true
