@@ -1,0 +1,169 @@
+- from: OFFLINE
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_work_time
+  callbacks:
+    - log_start_work
+
+- from: OFFLINE
+  to: HOLIDAY_WORK
+  client_status: 'WORKING'
+  conditions:
+    - is_holiday_or_weekend
+  callbacks:
+    - log_start_holiday_work
+
+- from: OFFLINE
+  to: UNAUTHORIZED_ABSENCE
+  client_status: 'OFFLINE'
+  conditions:
+    - is_not_work_time
+    - is_unauthorized_absence
+  callbacks:
+    - log_unauthorized_absence
+
+
+- from: WORKING
+  to: SHORT_BREAK
+  client_status: 'SHORT_BREAK'
+  conditions:
+    - is_break_time
+  callbacks:
+    - log_start_break
+
+- from: SHORT_BREAK
+  to: EXTENDED_BREAK
+  client_status: 'SHORT_BREAK'
+  conditions:
+    - break_exceeded
+  callbacks:
+    - log_start_break
+
+- from: EXTENDED_BREAK
+  to: UNAUTHORIZED_ABSENCE
+  client_status: 'SHORT_BREAK'
+  conditions:
+    - break_exceeded
+  callbacks:
+    - log_unauthorized_absence
+
+- from: SHORT_BREAK
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_work_time
+  callbacks:
+    - log_end_break
+
+- from: EXTENDED_BREAK
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_work_time
+  callbacks:
+    - log_end_break
+
+- from: WORKING
+  to: LUNCH_BREAK
+  client_status: 'SHORT_BREAK'
+  conditions:
+    - is_lunch_time
+  callbacks:
+    - log_start_break
+
+- from: LUNCH_BREAK
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_work_time
+  callbacks:
+    - log_end_break
+
+- from: WORKING
+  to: OVERTIME
+  client_status: 'WORKING'
+  conditions:
+    - is_overtime
+  callbacks:
+    - log_start_overtime
+
+- from: OVERTIME
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_regular_work
+  callbacks:
+    - log_end_overtime
+
+- from: WORKING
+  to: OFFLINE
+  client_status: 'OFFLINE'
+  conditions:
+    - idle_time_exceeded
+  callbacks:
+    - log_end_work
+
+- from: OVERTIME
+  to: OFFLINE
+  client_status: 'OFFLINE'
+  conditions:
+    - idle_time_exceeded
+  callbacks:
+    - log_end_work
+
+- from: HOLIDAY_WORK
+  to: OFFLINE
+  client_status: 'OFFLINE'
+  conditions:
+    - idle_time_exceeded
+  callbacks:
+    - log_end_work
+
+- from: UNAUTHORIZED_ABSENCE
+  to: WORKING
+  client_status: 'WORKING'
+  conditions:
+    - is_work_time
+  callbacks:
+    - log_start_work
+
+- from: WORKING
+  to: HOLIDAY_WORK
+  client_status: 'WORKING'
+  conditions:
+    - is_holiday_or_weekend
+  callbacks:
+    - log_start_holiday_work
+
+- from: SHORT_BREAK
+  to: LUNCH_BREAK
+  client_status: 'SHORT_BREAK'
+  conditions:
+    - is_lunch_time
+  callbacks:
+    - log_start_break
+
+- from: EXTENDED_BREAK
+  to: LUNCH_BREAK
+  client_status: 'SHORT_BREAK'
+  conditions:
+    - is_lunch_time
+  callbacks:
+    - log_start_break
+
+- from: SHORT_BREAK
+  to: OFFLINE
+  client_status: 'OFFLINE'
+  conditions:
+    - idle_time_exceeded
+  callbacks:
+    - log_end_work
+
+- from: LUNCH_BREAK
+  to: OFFLINE
+  client_status: 'OFFLINE'
+  conditions:
+    - idle_time_exceeded
+  callbacks:
+    - log_end_work
